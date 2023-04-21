@@ -1,15 +1,15 @@
 /*********************************************************************************************************************
 * COPYRIGHT NOTICE
-* Copyright (c) 2019,Öğ·É¿Æ¼¼
+* Copyright (c) 2019,é€é£ç§‘æŠ€
 * All rights reserved.
 *
-* ÒÔÏÂËùÓĞÄÚÈİ°æÈ¨¾ùÊôÖğ·É¿Æ¼¼ËùÓĞ£¬Î´¾­ÔÊĞí²»µÃÓÃÓÚÉÌÒµÓÃÍ¾£¬
-* »¶Ó­¸÷Î»Ê¹ÓÃ²¢´«²¥±¾³ÌĞò£¬ĞŞ¸ÄÄÚÈİÊ±±ØĞë±£ÁôÖğ·É¿Æ¼¼µÄ°æÈ¨ÉùÃ÷¡£
+* ä»¥ä¸‹æ‰€æœ‰å†…å®¹ç‰ˆæƒå‡å±é€é£ç§‘æŠ€æ‰€æœ‰ï¼Œæœªç»å…è®¸ä¸å¾—ç”¨äºå•†ä¸šç”¨é€”ï¼Œ
+* æ¬¢è¿å„ä½ä½¿ç”¨å¹¶ä¼ æ’­æœ¬ç¨‹åºï¼Œä¿®æ”¹å†…å®¹æ—¶å¿…é¡»ä¿ç•™é€é£ç§‘æŠ€çš„ç‰ˆæƒå£°æ˜ã€‚
 *
 * @file             main
-* @company          ³É¶¼Öğ·É¿Æ¼¼ÓĞÏŞ¹«Ë¾
- * @author          Öğ·É¿Æ¼¼(QQ790875685)
-* @version          ²é¿´docÄÚversionÎÄ¼ş °æ±¾ËµÃ÷
+* @company          æˆéƒ½é€é£ç§‘æŠ€æœ‰é™å…¬å¸
+ * @author          é€é£ç§‘æŠ€(QQ790875685)
+* @version          æŸ¥çœ‹docå†…versionæ–‡ä»¶ ç‰ˆæœ¬è¯´æ˜
 * @Software         MounRiver Studio V1.51
 * @Target core      CH32V307VCT6
 * @Taobao           https://seekfree.taobao.com/
@@ -30,10 +30,12 @@
 
 uint16_t Num;
 uint16_t Lim;
-int i;
+uint8 i;
 uint j=1;
-uint8 USART_Data;
+uint8 uart_flag;
 uint8 grade;
+
+uint8 RX_Data[200];
 
  const MenuInit menu[7]={{0,"GAME",1,3},{0,"TIMER",2,0},{1,"LED",2,5},
 {0,"SNAKE",4,3},{3,"GRADE",4,4},{2,"PWM",6,5},{5,"NORMAL",6,6}};
@@ -42,30 +44,42 @@ uint8 grade;
 extern uint8 BirdPos[][16];
 int main(void)
 {
+    uint8 string[]="FUCK";
     int sel=0;
-    interrupt_global_disable();             // ¹Ø±Õ×ÜÖĞ¶Ï
-    clock_init(SYSTEM_CLOCK_144M);          // Îñ±Ø±£Áô£¬ÉèÖÃÏµÍ³Ê±ÖÓ¡£
-    debug_init();                           // Îñ±Ø±£Áô£¬±¾º¯ÊıÓÃÓÚ³õÊ¼»¯MPU Ê±ÖÓ µ÷ÊÔ´®¿Ú
+    interrupt_global_disable();             // å…³é—­æ€»ä¸­æ–­
+    clock_init(SYSTEM_CLOCK_144M);          // åŠ¡å¿…ä¿ç•™ï¼Œè®¾ç½®ç³»ç»Ÿæ—¶é’Ÿã€‚
+    debug_init();                           // åŠ¡å¿…ä¿ç•™ï¼Œæœ¬å‡½æ•°ç”¨äºåˆå§‹åŒ–MPU æ—¶é’Ÿ è°ƒè¯•ä¸²å£
 
-    // ´Ë´¦±àĞ´ÓÃ»§´úÂë(ÀıÈç£ºÍâÉè³õÊ¼»¯´úÂëµÈ)
+    // æ­¤å¤„ç¼–å†™ç”¨æˆ·ä»£ç (ä¾‹å¦‚ï¼šå¤–è®¾åˆå§‹åŒ–ä»£ç ç­‰)
     KEY_Init();
     oled_init();
-    interrupt_global_enable();              // ×ÜÖĞ¶Ï×îºó¿ªÆô
-    uart_init(UART_3, 9600, UART3_TX_B10, UART3_RX_B11);
-    //uart_rx_interrupt(UART_3,ENABLE);
+    interrupt_global_enable();              // æ€»ä¸­æ–­æœ€åå¼€å¯
+    uart_init(UART_3, 115200, UART3_TX_B10, UART3_RX_B11);
+    uart_rx_interrupt(UART_3,ENABLE);
     oled_clear();
-    oled_show_string(1, 0, "we choose");
+    oled_show_string(1, 0, "RX_DATA");
+//    oled_show_string(1, 2, "TX_DATA");
     //timer_init();
-    oled_show_string(1, 1, menu[sel].content);
-    int i=0;
+    //oled_show_string(1, 1, menu[sel].content);
+    //int i=0;
     LED_Mode3_Init();
     pwm_set_duty(TIM1_PWM_CH1_A8,5000);
     pwm_set_duty(TIM1_PWM_CH2_A9,5000);
     pwm_set_duty(TIM1_PWM_CH3_A10,5000);
     pwm_set_duty(TIM1_PWM_CH4_A11,5000);
-    uart_write_byte(UART_3,0x56);
+    printf("%s\r\n",string);
+    //uart_write_string(UART_3,"Start:");
     while(1)
     {
+        if(uart_flag == 1)
+        {
+            oled_show_string(1, 1, "          ");
+            oled_show_string(1, 1, RX_Data);
+            printf("%s\r\n",RX_Data);
+            uart_flag=0;
+        }
+        //system_delay_ms(1000);
+        //scanf();
         //i=Key_Get();
         //Menu_Sel(&i, &sel);
     }
