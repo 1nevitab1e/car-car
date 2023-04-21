@@ -1,20 +1,20 @@
 /*********************************************************************************************************************
 * COPYRIGHT NOTICE
-* Copyright (c) 2019,Öğ·É¿Æ¼¼
+* Copyright (c) 2019,é€é£ç§‘æŠ€
 * All rights reserved.
 *
-* ÒÔÏÂËùÓĞÄÚÈİ°æÈ¨¾ùÊôÖğ·É¿Æ¼¼ËùÓĞ£¬Î´¾­ÔÊĞí²»µÃÓÃÓÚÉÌÒµÓÃÍ¾£¬
-* »¶Ó­¸÷Î»Ê¹ÓÃ²¢´«²¥±¾³ÌĞò£¬ĞŞ¸ÄÄÚÈİÊ±±ØĞë±£ÁôÖğ·É¿Æ¼¼µÄ°æÈ¨ÉùÃ÷¡£
+* ä»¥ä¸‹æ‰€æœ‰å†…å®¹ç‰ˆæƒå‡å±é€é£ç§‘æŠ€æ‰€æœ‰ï¼Œæœªç»å…è®¸ä¸å¾—ç”¨äºå•†ä¸šç”¨é€”ï¼Œ
+* æ¬¢è¿å„ä½ä½¿ç”¨å¹¶ä¼ æ’­æœ¬ç¨‹åºï¼Œä¿®æ”¹å†…å®¹æ—¶å¿…é¡»ä¿ç•™é€é£ç§‘æŠ€çš„ç‰ˆæƒå£°æ˜ã€‚
 *
 * @file             isr
-* @company          ³É¶¼Öğ·É¿Æ¼¼ÓĞÏŞ¹«Ë¾
-* @author           Öğ·É¿Æ¼¼(QQ790875685)
-* @version          ²é¿´docÄÚversionÎÄ¼ş °æ±¾ËµÃ÷
+* @company          æˆéƒ½é€é£ç§‘æŠ€æœ‰é™å…¬å¸
+* @author           é€é£ç§‘æŠ€(QQ790875685)
+* @version          æŸ¥çœ‹docå†…versionæ–‡ä»¶ ç‰ˆæœ¬è¯´æ˜
 * @Software         MounRiver Studio V1.51
 * @Target core      CH32V307VCT6
 * @Taobao           https://seekfree.taobao.com/
 * @date             2021-11-25
-*                   V1.1 2022.01.11  ¶Ôµ÷ch1ºÍch2µÄÀ¶ÑÀ»Øµ÷º¯ÊıÎ»ÖÃ
+*                   V1.1 2022.01.11  å¯¹è°ƒch1å’Œch2çš„è“ç‰™å›è°ƒå‡½æ•°ä½ç½®
 ********************************************************************************************************************/
 
 #include "zf_common_headfile.h"
@@ -22,7 +22,9 @@
 #include "snake.h"
 
 extern uint16_t tim,Num;
-extern uint8 USART_Data;
+extern uint8 uart_flag;
+
+extern uint8 RX_Data[200];
 
 void NMI_Handler(void)       __attribute__((interrupt("WCH-Interrupt-fast")));
 void HardFault_Handler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
@@ -96,13 +98,40 @@ void USART2_IRQHandler(void)
 }
 void USART3_IRQHandler(void)
 {
+    static uint8 state=0;
+    static uint8 p=0;
+    uint8 i;
     if(USART_GetITStatus(USART3, USART_IT_RXNE) != RESET)
     {
-        if(uart_query_byte(UART_3,&USART_Data) == 1)
+        if(uart_query_byte(UART_3,&i) == 1)
         {
-            oled_show_int(0, 6, USART_Data, 3);
-        }
+            if(state==0)
+            {
+                if(i=='@') state=1;
+            }
+            else if(state==1)
+            {
+                if(i=='#')
+                {
+                    state=2;
+                }
+                else
+                {
+                    RX_Data[p]=i;
+                    p++;
+                }
 
+            }
+            else if(state==2)
+            {
+                if(i=='#')
+                {
+                    state=0;
+                    uart_flag=1;
+                    RX_Data[p]='\0';
+                }
+            }
+        }
         USART_ClearITPendingBit(USART3, USART_IT_RXNE);
     }
 }
